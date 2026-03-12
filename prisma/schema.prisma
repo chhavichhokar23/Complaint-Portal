@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ENUMS
+
+enum Role {
+  CUSTOMER
+  ADMIN
+  EMPLOYEE
+}
+
+enum Department {
+  TECHNICAL
+  FINANCE
+  SUPPORT
+}
+
+enum ComplaintStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  RESOLVED
+  REJECTED
+}
+
+enum ComplaintCategory {
+  TECHNICAL
+  BILLING
+  ACCOUNT
+  GENERAL
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// USER MODEL
+
+model User {
+  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  email      String      @unique
+  password   String
+  role       Role
+  department Department?
+  mobileNumber String? 
+  createdAt  DateTime    @default(now())
+
+  // Complaints created by this user (if CUSTOMER)
+  complaints Complaint[]
+
+  // Complaints assigned to this user (if EMPLOYEE)
+  assignedComplaints Complaint[] @relation("AssignedComplaints")
+}
+
+// COMPLAINT MODEL
+
+model Complaint {
+  id            String             @id @default(cuid())
+
+  // Complaint information
+  ticketNumber  Int?      @unique
+  category      ComplaintCategory  @default(GENERAL)
+  subcategory   String?
+  mobileNumber  String?
+  description   String
+
+  // Workflow fields
+  status        ComplaintStatus    @default(PENDING)
+  priority      Priority           @default(MEDIUM)
+
+  // SLA
+  slaDeadline   DateTime?
+
+  // Resolution / rejection
+  resolutionMessage String?
+  rejectionReason   String?
+
+  
+
+  // Relations
+  customerId String @db.Uuid
+  customer   User   @relation(fields: [customerId], references: [id])
+
+  assignedToId String? @db.Uuid
+  assignedTo   User?   @relation("AssignedComplaints", fields: [assignedToId], references: [id])
+
+  createdAt DateTime @default(now())
+  feedbacks ComplaintFeedback[]
+}
+model ComplaintFeedback {
+  id          String   @id @default(uuid())
+  complaintId String
+  rating      Int
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  @@index([complaintId])
+}
