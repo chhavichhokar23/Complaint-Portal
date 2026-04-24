@@ -136,6 +136,21 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Smooth transitions for all interactive elements */
+  button, a, input, select, textarea, [role="button"], [role="tab"], [role="menuitem"] {
+    @apply transition-all duration-200 ease-out;
+  }
+  
+  /* Smooth color transitions */
+  * {
+    @apply transition-colors duration-200 ease-out;
+  }
+  
+  /* Smooth opacity transitions */
+  [class*="hover:opacity"], [class*="hover:bg"], [class*="hover:text"], [class*="hover:border"], [class*="hover:shadow"], [class*="focus:"] {
+    @apply transition-all duration-200 ease-out;
+  }
 }
 /* Custom scrollbar */
 .custom-scroll::-webkit-scrollbar {
@@ -162,9 +177,25 @@ select {
 select:focus {
   outline: none;
   box-shadow: 0 0 0 2px #94a3b8;
+  transition: all 0.2s ease;
 }
 
 /* The dropdown arrow (webkit only) */
 select::-webkit-scrollbar {
   width: 4px;
+}
+
+/* Enhanced smooth transitions for common interactions */
+@layer components {
+  .transition {
+    @apply duration-200 ease-out;
+  }
+
+  .transition-fast {
+    @apply duration-150 ease-out;
+  }
+
+  .transition-slow {
+    @apply duration-300 ease-out;
+  }
 }

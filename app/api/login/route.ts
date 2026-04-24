@@ -16,6 +16,12 @@ export async function POST(request: Request) {
         { status: 404 }
       );
     }
+    if (user.registrationStatus === "PENDING") {
+      return NextResponse.json({ message: "Your account is awaiting admin approval." }, { status: 403 })
+    }
+    if (user.registrationStatus === "REJECTED") {
+      return NextResponse.json({ message: "Your account has been rejected. Please contact support." }, { status: 403 })
+    }
 
     const isValid = await bcrypt.compare(password, user.password);
 

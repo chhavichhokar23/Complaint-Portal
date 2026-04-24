@@ -1,7 +1,7 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import Navbar from "@/components/dashboard/Navbar"
+import DashboardWrapper from "@/components/dashboard/DashboardWrapper"
 import Sidebar from "@/components/dashboard/Sidebar"
 
 export default async function DashboardLayout({
@@ -16,10 +16,10 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
-  // Fetch user from DB so Sidebar can show real name/email
+  // Fetch user from DB so Sidebar and Navbar can show real name/email
   const user = await prisma.user.findUnique({
     where: { id: session.value },
-    select: { name: true, email: true, role: true },
+    select: { name: true, email: true, role: true, mobileNumber: true, organisationId: true, department: true, organisation: { select: { id: true, name: true } } },
   })
 
   if (!user) {
@@ -35,13 +35,24 @@ export default async function DashboardLayout({
       {/* Main section */}
       <div className="flex-1 flex flex-col overflow-hidden">
 
-        {/* Navbar */}
-        <Navbar user={user}/>
-
-        {/* Page content */}
-        <main className="flex-1 p-8 overflow-y-auto bg-gray-50">
-          {children}
-        </main>
+        {/* Wrapper for Navbar and Profile Modal */}
+        <DashboardWrapper
+          user={user}
+          profileUser={{
+            name: user.name,
+            email: user.email,
+            mobileNumber: user.mobileNumber,
+            organisationId: user.organisationId,
+            organisation: user.organisation,
+            department: user.department,
+            role: user.role,
+          }}
+        >
+          {/* Page content */}
+          <main className="flex-1 p-8 overflow-y-auto bg-gray-50">
+            {children}
+          </main>
+        </DashboardWrapper>
 
       </div>
 

@@ -4,6 +4,8 @@ import { Complaint } from "@/types/complaint"
 type Props = {
   complaints: Complaint[]
   role: "ADMIN" | "EMPLOYEE" | "CUSTOMER"
+  categories?: string[]
+  priorities?: { id: string; name: string }[] 
   onAssignClick?: (id: string) => void
   onStatusChange?: (id: string, status: string) => void
   onPriorityChange?: (id: string, priority: string) => void
@@ -18,6 +20,7 @@ type Props = {
 export default function ComplaintTable({
   complaints,
   role,
+  categories,
   onAssignClick,
   onStatusChange,
   onPriorityChange,
@@ -27,13 +30,14 @@ export default function ComplaintTable({
   onEdit,
   onRowClick,
   onGiveFeedback,
+  priorities,
 }: Props) {
 
   const grid =
     role === "ADMIN"
-      ? "grid-cols-9"
+      ? "grid-cols-10"
       : role === "EMPLOYEE"
-      ? "grid-cols-9"
+      ? "grid-cols-10"
       : "grid-cols-7"
 
   return (
@@ -47,6 +51,7 @@ export default function ComplaintTable({
           <div>Description</div>
           <div>Status</div>
           <div>Priority</div>
+          <div>Organisation</div>
           <div>Customer</div>
           <div>Assigned to</div>
           <div>SLA Deadline</div>
@@ -59,6 +64,7 @@ export default function ComplaintTable({
           <div>Category</div>
           <div>Subcategory</div>
           <div>Customer</div>
+          <div>Organisation</div>
           <div>Description</div>
           <div>Deadline</div>
           <div>Priority</div>
@@ -84,6 +90,7 @@ export default function ComplaintTable({
           key={c.id}
           complaint={c}
           role={role}
+          categories={categories}
           onAssignClick={onAssignClick}
           onStatusChange={onStatusChange}
           onPriorityChange={onPriorityChange}
@@ -93,6 +100,7 @@ export default function ComplaintTable({
           onEdit={onEdit}
           onRowClick={onRowClick}
           onGiveFeedback={onGiveFeedback}
+          priorities={priorities}
         />
       ))}
 

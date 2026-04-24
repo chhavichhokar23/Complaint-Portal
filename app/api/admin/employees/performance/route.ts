@@ -1,24 +1,11 @@
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
+import { getCurrentUser } from "@/lib/auth"
 
 export async function GET() {
   try {
 
-    const cookieStore = await cookies()
-    const session = cookieStore.get("session")
-
-    if (!session) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
-    }
-
-    const admin = await prisma.user.findUnique({
-      where: { id: session.value }
-    })
-
-    if (!admin || admin.role !== "ADMIN") {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
-    }
+    const admin = await getCurrentUser("ADMIN")
 
     const employees = await prisma.user.findMany({
       where: { role: "EMPLOYEE" },

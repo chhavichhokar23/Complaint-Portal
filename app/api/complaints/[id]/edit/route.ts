@@ -38,12 +38,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    if (complaint.status !== ComplaintStatus.PENDING) {
-      return NextResponse.json(
-        { error: "Complaint can only be edited when pending" },
-        { status: 400 }
-      )
-    }
+    if (complaint.status !== ComplaintStatus.OPEN) {
+  return NextResponse.json(
+    { error: "Complaint can only be edited while it is open" },
+    { status: 400 }
+  )
+}
 
     const body = await req.json()
 

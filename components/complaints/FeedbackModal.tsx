@@ -16,6 +16,7 @@ export default function FeedbackModal({
   open,
   onOpenChange,
   onSubmit,
+  resolutionMessage,
 }: any) {
   const [rating, setRating] = useState(0)
   const [hovered, setHovered] = useState(0)
@@ -52,17 +53,27 @@ export default function FeedbackModal({
                 Ticket #{complaint.ticketNumber}
               </DialogTitle>
               <p className="text-slate-400 text-xs mt-1.5">
-                Your complaint was marked as completed
+                Your complaint has been closed
               </p>
             </div>
             <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 mt-1 flex-shrink-0">
-              Completed
+              Closed
             </span>
           </div>
         </div>
 
         {/* Body */}
         <div className="px-6 py-4 space-y-3">
+
+          {/* Resolution message */}
+          {resolutionMessage && (
+            <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+              <p className="text-emerald-600 text-[10px] font-medium uppercase tracking-widest mb-2">
+                Resolution from support
+              </p>
+              <p className="text-sm text-emerald-800 leading-relaxed">{resolutionMessage}</p>
+            </div>
+          )}
 
           {/* Rating tile */}
           <div className="bg-slate-50 rounded-xl p-4">

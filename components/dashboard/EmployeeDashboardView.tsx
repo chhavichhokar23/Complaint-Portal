@@ -1,22 +1,33 @@
 "use client"
 
-import { useState } from "react"
+import { useState,useEffect } from "react"
 import { Complaint } from "@/types/complaint"
 import ComplaintTable from "../complaints/ComplaintTable"
 import StatsCards from "./StatsCard"
 import DashboardFilters from "./DashboardFilters"
-import { ComplaintStatus, Priority } from "@prisma/client"
+import { ComplaintStatus } from "@prisma/client"
 import ComplaintDetailsModal from "../complaints/ComplaintDetailsModal"
+import { Dialog, DialogContent, DialogTitle } from "../ui/dialog"
 
 export default function EmployeeDashboardView({ initialComplaints }: any) {
 
   const [complaints, setComplaints] = useState<Complaint[]>(initialComplaints)
-  const [activeComplaint, setActiveComplaint] = useState<string | null>(null)
-  const [resolutionMessage, setResolutionMessage] = useState("")
   const [statusFilter, setStatusFilter] = useState<ComplaintStatus | "ALL">("ALL")
-  const [priorityFilter, setPriorityFilter] = useState<Priority | "ALL">("ALL")
+  const [priorityFilter, setPriorityFilter] = useState<string>("ALL")
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [activeComplaintObj, setActiveComplaintObj] = useState<Complaint | null>(null)
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([])
+  const [priorities, setPriorities] = useState<{ id: string; name: string }[]>([])
+  const [completionModalOpen, setCompletionModalOpen] = useState(false)
+  const [completionComplaintId, setCompletionComplaintId] = useState<string | null>(null)
+  const [completionMessage, setCompletionMessage] = useState("")
+  useEffect(() => {
+    fetch("/api/priorities")
+      .then(r => r.json())
+      .then(data => setPriorities(data.priorities ?? []))
+  }, [])
+
+
 
     const handleRowClick = (complaint: Complaint) => {
       setActiveComplaintObj(complaint)
@@ -25,14 +36,17 @@ export default function EmployeeDashboardView({ initialComplaints }: any) {
 
   const stats = {
     total: complaints.length,
-    pending: complaints.filter(c => c.status === "ASSIGNED").length,
-    resolved: complaints.filter(c => c.status === "COMPLETED").length,
-    highPriority: complaints.filter(c => c.priority === "CRITICAL").length,
+    open: complaints.filter(c => c.status === "OPEN").length,
+    inProgress: complaints.filter(c => c.status === "ASSIGNED" || c.status === "IN_PROGRESS").length,
+    completed: complaints.filter(c => c.status === "COMPLETED").length,
+    closed: complaints.filter(c => c.status === "CLOSED").length,
+    resolved: complaints.filter(c => c.status === "RESOLVED").length,
+    rejected: complaints.filter(c => c.status === "REJECTED").length,
   }
 
   const filteredComplaints = complaints.filter((c) => {
     if (statusFilter !== "ALL" && c.status !== statusFilter) return false
-    if (priorityFilter !== "ALL" && c.priority !== priorityFilter) return false
+    if (priorityFilter !== "ALL" && c.priority?.id !== priorityFilter) return false 
     return true
   })
 
@@ -40,7 +54,7 @@ export default function EmployeeDashboardView({ initialComplaints }: any) {
     const res = await fetch("/api/complaints/status", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ complaintId, status, resolutionMessage: message }),
+      body: JSON.stringify({ complaintId, status, message }),
     })
     const updated = await res.json()
     if (res.ok) {
@@ -48,17 +62,27 @@ export default function EmployeeDashboardView({ initialComplaints }: any) {
     }
   }
 
-  const startWork = (id: string) => updateStatus(id, "IN_PROGRESS")
-  const openResolutionModal = (id: string) => setActiveComplaint(id)
-  const submitResolution = () => {
-    updateStatus(activeComplaint!, "COMPLETED", resolutionMessage)
-    setActiveComplaint(null)
-    setResolutionMessage("")
+  const onStartWork = (id: string) => updateStatus(id, "IN_PROGRESS")
+  const onCompleteWork = (id: string, note?: string) => {
+    if (!note) {
+      // Called from table row without a message, open modal
+      setCompletionComplaintId(id)
+      setCompletionModalOpen(true)
+      return
+    }
+    // Called from modal with message, proceed with update
+    updateStatus(id, "COMPLETED", note)
   }
+  const onStatusChange = (id: string, status: string, message?: string) => updateStatus(id, status, message)
 
   if (complaints.length === 0) {
     return <p className="text-muted-foreground">No complaints assigned yet.</p>
   }
+  useEffect(() => {
+  fetch("/api/admin/categories")
+    .then(r => r.json())
+    .then(data => setCategoryOptions((data.categories ?? []).map((c: any) => c.name)))
+}, [])
 
   return (
     <div>
@@ -68,6 +92,7 @@ export default function EmployeeDashboardView({ initialComplaints }: any) {
         setStatusFilter={setStatusFilter}
         setPriorityFilter={setPriorityFilter}
         setCategoryFilter={() => {}}
+        role="EMPLOYEE"
       />
 
       <DashboardFilters
@@ -77,14 +102,17 @@ export default function EmployeeDashboardView({ initialComplaints }: any) {
         setStatusFilter={setStatusFilter}
         setPriorityFilter={setPriorityFilter}
         setCategoryFilter={() => {}}
+        categoryOptions={categoryOptions}
+        priorityOptions={priorities}
+        role="EMPLOYEE"
       />
 
       <ComplaintTable
         complaints={filteredComplaints}
         role="EMPLOYEE"
-        onStartWork={startWork}
-        onCompleteWork={openResolutionModal}
-        onRowClick={handleRowClick}   // ← add this
+        onStartWork={onStartWork}
+        onCompleteWork={onCompleteWork}
+        onRowClick={handleRowClick}
       />
 
       <ComplaintDetailsModal
@@ -92,31 +120,45 @@ export default function EmployeeDashboardView({ initialComplaints }: any) {
         open={detailsOpen}
         role="EMPLOYEE"
         onOpenChange={setDetailsOpen}
-        onStartWork={startWork}
-        onCompleteWork={openResolutionModal}
+        onStatusChange={onStatusChange}
+        onStartWork={onStartWork}
+        onCompleteWork={onCompleteWork}
       />
 
-      {activeComplaint && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/30">
-          <div className="bg-white p-6 rounded-lg w-[400px] space-y-4">
-            <h2 className="text-lg font-semibold">Resolution Message</h2>
-            <textarea
-              className="w-full border rounded p-2 text-sm"
-              placeholder="Describe what you fixed..."
-              value={resolutionMessage}
-              onChange={(e) => setResolutionMessage(e.target.value)}
-            />
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setActiveComplaint(null)} className="px-3 py-1 border rounded text-sm">
-                Cancel
-              </button>
-              <button onClick={submitResolution} className="px-3 py-1 bg-purple-600 text-white rounded text-sm">
-                Submit
-              </button>
-            </div>
+      <Dialog open={completionModalOpen} onOpenChange={setCompletionModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>Completion Message</DialogTitle>
+
+          <textarea
+            value={completionMessage}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setCompletionMessage(e.target.value)}
+            placeholder="Describe what was done..."
+            className="w-full border rounded p-2 mt-3"
+          />
+
+          <div className="flex justify-end gap-2 mt-3">
+            <button onClick={() => setCompletionModalOpen(false)}>
+              Cancel
+            </button>
+
+            <button
+              onClick={async () => {
+                if (!completionMessage.trim()) return
+
+                await updateStatus(completionComplaintId!, "COMPLETED", completionMessage)
+
+                setCompletionModalOpen(false)
+                setCompletionMessage("")
+                setCompletionComplaintId(null)
+              }}
+              className="bg-purple-600 text-white px-4 py-2 rounded"
+            >
+              Confirm
+            </button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
     </div>
   )

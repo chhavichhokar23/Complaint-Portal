@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend
+  CartesianGrid, Legend
 } from "recharts"
 import { Users, CheckCircle, TrendingUp, AlertTriangle } from "lucide-react"
 

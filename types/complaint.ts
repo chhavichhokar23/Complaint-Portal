@@ -1,24 +1,38 @@
-import { ComplaintStatus, Priority, ComplaintCategory } from "@prisma/client"
+import { ComplaintStatus, ResolutionType } from "@prisma/client"
 
 export type Complaint = {
   id: string
   description: string
   status: ComplaintStatus
-  category: ComplaintCategory
+  category: string
   subcategory: string | null
   mobileNumber: string | null
-  priority: Priority
+  priority: { id: string; name: string } | null
   slaDeadline: Date | null
   resolutionMessage: string | null
-  customer: { name: string } | null
+  rejectionReason: string | null
+  customer: { name: string; organisationId?: string | null; organisation?: { id: string; name: string } | null } | null
   assignedTo: { id: string; name: string } | null
-  ticketNumber: number
+  ticketNumber: string | null
   createdAt: Date
-
   feedbacks?: {
     id: string
     rating: number
     comment?: string | null
     createdAt: Date
+  }[]
+  attachments?: {
+    id: string
+    fileName: string
+    fileUrl: string
+    fileType: string
+    createdAt: Date
+  }[]
+  resolutions?: {
+    id: string
+    message: string
+    type: ResolutionType    
+    createdAt: Date
+    createdBy: { name: string; role: string } | null
   }[]
 }

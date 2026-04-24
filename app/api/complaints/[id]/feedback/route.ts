@@ -20,14 +20,12 @@ export async function PATCH(
     )
   }
 
-  // Only allow feedback when complaint is completed
-  if (complaint.status !== "COMPLETED") {
-    return NextResponse.json(
-      { error: "Feedback allowed only for completed complaints" },
-      { status: 400 }
-    )
-  }
-
+if (complaint.status !== "CLOSED") {
+  return NextResponse.json(
+    { error: "Feedback allowed only for closed complaints" },
+    { status: 400 }
+  )
+}
   // Create feedback entry
   await prisma.complaintFeedback.create({
     data: {
@@ -41,10 +39,19 @@ export async function PATCH(
   const updatedComplaint = await prisma.complaint.findUnique({
     where: { id },
     include: {
-      customer: true,
+      customer: {
+        include: {
+          organisation: true,
+        },
+      },
       assignedTo: true,
+      priority: true,
       feedbacks: {
         orderBy: { createdAt: "desc" }
+      },
+      resolutions: {
+        orderBy: { createdAt: "desc" as const },
+        include: { createdBy: { select: { name: true, role: true } } }
       }
     }
   })

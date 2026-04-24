@@ -1,32 +1,32 @@
 import { prisma } from "@/lib/prisma"
-import { ComplaintCategory } from "@prisma/client"
 
-const prefixMap: Record<ComplaintCategory, number> = {
-  ACCOUNT: 1000,
-  BILLING: 2000,
-  TECHNICAL: 3000,
-  GENERAL: 4000
-}
-
-export async function generateTicketNumber(category: ComplaintCategory) {
-
-  const prefix = prefixMap[category]
-
-  const lastTicket = await prisma.complaint.findFirst({
-    where: {
-      ticketNumber: {
-        gte: prefix,
-        lt: prefix + 1000
-      }
-    },
-    orderBy: {
-      ticketNumber: "desc"
-    }
+export async function generateTicketNumber(category: string): Promise<string> {
+  // Look up prefix from DB dynamically
+  const categoryRecord = await prisma.categoryMaster.findUnique({
+    where: { name: category },
   })
 
-  const nextTicket = lastTicket
-    ? lastTicket.ticketNumber! + 1
-    : prefix + 1
+  const prefix = categoryRecord?.prefix ?? "00"
 
-  return nextTicket
+  // Date part: DDMMYY
+  const now = new Date()
+  const dd = String(now.getDate()).padStart(2, "0")
+  const mm = String(now.getMonth() + 1).padStart(2, "0")
+  const yy = String(now.getFullYear()).slice(-2)
+  const datePart = `${dd}${mm}${yy}`
+
+  // Count tickets for this category created today only
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+
+  const count = await prisma.complaint.count({
+    where: {
+      category: { equals: category, mode: "insensitive" },
+      createdAt: { gte: startOfDay, lt: endOfDay },
+    },
+  })
+
+  const sequential = String(count + 1).padStart(3, "0")
+
+  return `${prefix}-${datePart}-${sequential}` // e.g. 01-180326-001
 }

@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from "react"
 import { ChevronDown, Check } from "lucide-react"
+import { getStatusLabel } from "@/lib/complaintUtils"
 
 function FilterDropdown({
   value,
@@ -15,6 +16,7 @@ function FilterDropdown({
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const selected = options.find(o => o.value === value)
+  const isActive = value !== "ALL"
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -24,16 +26,12 @@ function FilterDropdown({
     return () => document.removeEventListener("mousedown", handler)
   }, [])
 
-  const isActive = value !== "ALL"
-
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(p => !p)}
         className={`flex items-center gap-2 h-8 px-3 rounded-lg border text-xs font-medium transition-all ${
-          isActive
-            ? "bg-slate-700 text-white border-slate-700"
-            : "bg-card border-border text-foreground hover:border-slate-400"
+          isActive ? "bg-slate-700 text-white border-slate-700" : "bg-card border-border text-foreground hover:border-slate-400"
         }`}
       >
         <span>{selected?.label}</span>
@@ -64,11 +62,40 @@ export default function DashboardFilters({
   statusFilter,
   priorityFilter,
   categoryFilter,
+  organisationFilter = "ALL",
   setStatusFilter,
   setPriorityFilter,
   setCategoryFilter,
-  hidePriority = false
+  setOrganisationFilter,
+  hidePriority = false,
+  categoryOptions = [],
+  priorityOptions = [],
+  organisationOptions = [],
+  role,
 }: any) {
+
+  const categoryFilterOptions = [
+    { value: "ALL", label: "All Category" },
+    ...categoryOptions.map((c: string) => ({
+      value: c,
+      label: c.charAt(0) + c.slice(1).toLowerCase(),
+    })),
+  ]
+  const priorityFilterOptions = [
+    { value: "ALL", label: "All Priority" },
+    ...priorityOptions.map((p: { id: string; name: string }) => ({
+      value: p.id,
+      label: p.name,
+    })),
+  ]
+  const organisationFilterOptions = [
+    { value: "ALL", label: "All Organisations" },
+    { value: "NONE", label: "No Organisation" },
+    ...organisationOptions.map((org: { id: string; name: string }) => ({
+      value: org.id,
+      label: org.name,
+    })),
+  ]
 
   return (
     <div className="flex items-center gap-2 mb-4">
@@ -77,12 +104,14 @@ export default function DashboardFilters({
         onChange={setStatusFilter}
         options={[
           { value: "ALL", label: "All Status" },
-          { value: "PENDING", label: "Pending" },
-          { value: "ASSIGNED", label: "Assigned" },
-          { value: "IN_PROGRESS", label: "In Progress" },
-          { value: "COMPLETED", label: "Completed" },
-          { value: "RESOLVED", label: "Resolved" },
-          { value: "REJECTED", label: "Rejected" },
+          { value: "OPEN", label: getStatusLabel("OPEN" as any, role) },
+          { value: "ASSIGNED", label: getStatusLabel("ASSIGNED" as any, role) },
+          { value: "IN_PROGRESS", label: getStatusLabel("IN_PROGRESS" as any, role) },
+          { value: "COMPLETED", label: getStatusLabel("COMPLETED" as any, role) },
+          { value: "CLOSED", label: getStatusLabel("CLOSED" as any, role) },
+          { value: "RESOLVED", label: getStatusLabel("RESOLVED" as any, role) },
+          { value: "REJECTED", label: getStatusLabel("REJECTED" as any, role) },
+          { value: "PENDING", label: getStatusLabel("PENDING" as any, role) },
         ]}
       />
 
@@ -90,27 +119,23 @@ export default function DashboardFilters({
         <FilterDropdown
           value={priorityFilter}
           onChange={setPriorityFilter}
-          options={[
-            { value: "ALL", label: "All Priority" },
-            { value: "LOW", label: "Low" },
-            { value: "MEDIUM", label: "Medium" },
-            { value: "HIGH", label: "High" },
-            { value: "CRITICAL", label: "Critical" },
-          ]}
+          options={priorityFilterOptions}
         />
       )}
 
       <FilterDropdown
         value={categoryFilter}
         onChange={setCategoryFilter}
-        options={[
-          { value: "ALL", label: "All Category" },
-          { value: "TECHNICAL", label: "Technical" },
-          { value: "BILLING", label: "Billing" },
-          { value: "ACCOUNT", label: "Account" },
-          { value: "GENERAL", label: "General" },
-        ]}
+        options={categoryFilterOptions}
       />
+
+      {setOrganisationFilter && (
+        <FilterDropdown
+          value={organisationFilter}
+          onChange={setOrganisationFilter}
+          options={organisationFilterOptions}
+        />
+      )}
     </div>
   )
 }
